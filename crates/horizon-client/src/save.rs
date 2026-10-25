@@ -1090,6 +1090,16 @@ pub fn encode_with(
                 .collect();
             s.insert("References".into(), Tag::Compound(refs));
         }
+        let starts: Compound = chunk
+            .structure_starts
+            .iter()
+            .filter_map(|start| Some((start.name.as_str().into(), start.save()?)))
+            .collect();
+        if !starts.is_empty()
+            && let Some(Tag::Compound(s)) = map.get_mut(&"structures".into())
+        {
+            s.insert("starts".into(), Tag::Compound(starts));
+        }
         map.entry("PostProcessing".into())
             .or_insert_with(|| Tag::List(vec![Tag::List(Vec::new()); shape.section_count()]));
     }
