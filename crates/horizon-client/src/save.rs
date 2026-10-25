@@ -247,6 +247,44 @@ pub struct SaveTables {
     block_entity: Vec<bool>,
     heightmaps: crate::assets::Properties,
     air: u32,
+    /// The POI type and its max tickets of each state (`PoiTypes`).
+    poi: Vec<Option<(&'static str, i32)>>,
+}
+/// `PoiTypes.register`: the POI type of a block state and its max tickets.
+fn poi_type(state: &horizon_world::chunk::BlockState) -> Option<(&'static str, i32)> {
+    let name = state.name.strip_prefix("minecraft:")?;
+    Some(match name {
+        "blast_furnace" => ("minecraft:armorer", 1),
+        "smoker" => ("minecraft:butcher", 1),
+        "cartography_table" => ("minecraft:cartographer", 1),
+        "brewing_stand" => ("minecraft:cleric", 1),
+        "composter" => ("minecraft:farmer", 1),
+        "barrel" => ("minecraft:fisherman", 1),
+        "fletching_table" => ("minecraft:fletcher", 1),
+        "cauldron" | "lava_cauldron" | "water_cauldron" | "powder_snow_cauldron" => {
+            ("minecraft:leatherworker", 1)
+        }
+        "lectern" => ("minecraft:librarian", 1),
+        "stonecutter" => ("minecraft:mason", 1),
+        "loom" => ("minecraft:shepherd", 1),
+        "smithing_table" => ("minecraft:toolsmith", 1),
+        "grindstone" => ("minecraft:weaponsmith", 1),
+        "bell" => ("minecraft:meeting", 32),
+        "beehive" => ("minecraft:beehive", 0),
+        "bee_nest" => ("minecraft:bee_nest", 0),
+        "nether_portal" => ("minecraft:nether_portal", 0),
+        "lodestone" => ("minecraft:lodestone", 0),
+        "test_instance_block" => ("minecraft:test_instance", 0),
+        // Only a bed's head is its home.
+        bed if bed.ends_with("_bed") => {
+            if state.properties.get("part").map(String::as_str) != Some("head") {
+                return None;
+            }
+            ("minecraft:home", 1)
+        }
+        rod if rod.ends_with("lightning_rod") => ("minecraft:lightning_rod", 0),
+        _ => return None,
+    })
 }
 impl SaveTables {
     pub fn new(assets: &crate::assets::Assets) -> Self {
@@ -275,6 +313,9 @@ impl SaveTables {
             block_entity: Vec::new(),
             heightmaps: assets.properties.clone(),
             air: registry.default_state("minecraft:air").map_or(0, |s| s.0),
+            poi: (0..registry.len())
+                .map(|id| registry.state(BlockStateId(id as u32)).and_then(poi_type))
+                .collect(),
         }
     }
     /// Tables with only the heightmaps' state facts, for tests.
@@ -287,6 +328,7 @@ impl SaveTables {
             block_entity: Vec::new(),
             heightmaps,
             air: 0,
+            poi: Vec::new(),
         }
     }
     /// Which states carry a block entity (`BlockFacts`), to drop entries for
@@ -780,6 +822,57 @@ impl LevelShape {
     }
     fn has_section(self, y: i32) -> bool {
         (self.min_section()..self.min_section() + self.section_count() as i32).contains(&y)
+    }
+}
+
+/// The chunk's points of interest as `PoiManager` saves them: each section
+/// with POI blocks, valid, with a record per block at its max tickets (a
+/// freshly made world). None when the chunk has none.
+pub fn encode_poi(chunk: &Chunk, tables: &SaveTables) -> Option<NamedTag> {
+    let kind = |v: u32| tables.poi.get(v as usize).copied().flatten();
+    let mut sections = Compound::new();
+    let mut states = [0u32; 4096];
+    for (si, section) in chunk.sections.iter().enumerate() {
+        if !section.blocks.maybe_has(|v| kind(v).is_some()) {
+            continue;
+        }
+        section.unpack(&mut states);
+        let y = (MIN_Y >> 4) + si as i32;
+        let records: Vec<Tag> = states
+            .iter()
+            .enumerate()
+            .filter_map(|(i, &v)| {
+                let (id, tickets) = kind(v)?;
+                let i = i as i32;
+                let pos = [
+                    chunk.x * 16 + (i & 15),
+                    y * 16 + (i >> 8),
+                    chunk.z * 16 + ((i >> 4) & 15),
+                ];
+                let mut record = vec![("pos", Tag::IntArray(pos.to_vec())), ("type", string(id))];
+                // PoiRecord.CODEC: free_tickets defaults to 0 and is then left out.
+                if tickets != 0 {
+                    record.push(("free_tickets", Tag::Int(tickets)));
+                }
+                Some(Tag::compound(record))
+            })
+            .collect();
+        if !records.is_empty() {
+            sections.insert(
+                y.to_string().as_str().into(),
+                Tag::compound([("Valid", Tag::Byte(1)), ("Records", Tag::List(records))]),
+            );
+        }
+    }
+    (!sections.is_empty()).then(|| poi_root(sections))
+}
+fn poi_root(sections: Compound) -> NamedTag {
+    NamedTag {
+        name: "".into(),
+        tag: Tag::compound([
+            ("DataVersion", Tag::Int(DATA_VERSION)),
+            ("Sections", Tag::Compound(sections)),
+        ]),
     }
 }
 
@@ -1668,8 +1761,31 @@ impl Record {
 }
 /// Chunk and entity records waiting for the writer thread, by (entities?,
 /// x, z): reads see them before the region files do.
-type PendingWrites = Mutex<HashMap<(bool, i32, i32), (u64, Record)>>;
-type WriteBatch = (bool, Vec<((i32, i32), Record, u64)>);
+type PendingWrites = Mutex<HashMap<(Folder, i32, i32), (u64, Record)>>;
+type WriteBatch = (Folder, Vec<((i32, i32), Record, u64)>);
+/// The region folders of a dimension.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+enum Folder {
+    Region,
+    Entities,
+    Poi,
+}
+impl Folder {
+    fn of(name: &str) -> Self {
+        match name {
+            "entities" => Self::Entities,
+            "poi" => Self::Poi,
+            _ => Self::Region,
+        }
+    }
+    fn name(self) -> &'static str {
+        match self {
+            Self::Region => "region",
+            Self::Entities => "entities",
+            Self::Poi => "poi",
+        }
+    }
+}
 
 /// The background thread that encodes chunks and writes them into the region files, in
 /// submission order.
@@ -1691,6 +1807,7 @@ pub struct SaveDir {
     pub root: PathBuf,
     regions: Arc<RegionCache>,
     entity_regions: Arc<RegionCache>,
+    poi_regions: Arc<RegionCache>,
     pending: Arc<PendingWrites>,
     sequence: AtomicU64,
     writer: Mutex<Option<Writer>>,
@@ -1707,6 +1824,7 @@ impl SaveDir {
             root,
             regions: Default::default(),
             entity_regions: Default::default(),
+            poi_regions: Default::default(),
             pending: Default::default(),
             sequence: AtomicU64::new(0),
             writer: Mutex::new(None),
@@ -1723,16 +1841,16 @@ impl SaveDir {
             .pending
             .lock()
             .ok()?
-            .get(&(folder != "region", x, z))
+            .get(&(Folder::of(folder), x, z))
             .map(|(_, r)| r.clone());
         if let Some(record) = pending {
             return record.tag().map(|t| (*t).clone());
         }
         let key = (x >> 5, z >> 5);
-        let cache = if folder == "region" {
-            &self.regions
-        } else {
-            &self.entity_regions
+        let cache = match Folder::of(folder) {
+            Folder::Region => &self.regions,
+            Folder::Entities => &self.entity_regions,
+            Folder::Poi => &self.poi_regions,
         };
         let path = self.region_path(folder, key.0, key.1);
         let region = cached_region(cache, key, &path, false).ok()??;
@@ -1797,16 +1915,16 @@ impl SaveDir {
             .into_iter()
             .map(|(k, t)| (k, t.map_or(Record::Delete, |t| Record::Tag(Arc::new(t)))))
             .collect();
-        self.queue(folder != "region", records, wait)
+        self.queue(Folder::of(folder), records, wait)
     }
-    fn queue(&self, entities: bool, records: Vec<((i32, i32), Record)>, wait: bool) -> Result<()> {
+    fn queue(&self, folder: Folder, records: Vec<((i32, i32), Record)>, wait: bool) -> Result<()> {
         if !records.is_empty() {
             let mut batch = Vec::with_capacity(records.len());
             {
                 let mut pending = self.pending.lock().map_err(|_| "pending writes poisoned")?;
                 for (key, record) in records {
                     let seq = self.sequence.fetch_add(1, Ordering::Relaxed);
-                    pending.insert((entities, key.0, key.1), (seq, record.clone()));
+                    pending.insert((folder, key.0, key.1), (seq, record.clone()));
                     batch.push((key, record, seq));
                 }
             }
@@ -1817,7 +1935,7 @@ impl SaveDir {
                 .map_err(|_| "writer poisoned")? += 1;
             let mut writer = self.writer.lock().map_err(|_| "writer poisoned")?;
             let writer = writer.get_or_insert_with(|| self.start_writer());
-            if writer.send.send((entities, batch)).is_err() {
+            if writer.send.send((folder, batch)).is_err() {
                 *self
                     .outstanding
                     .error
@@ -1840,23 +1958,28 @@ impl SaveDir {
     fn start_writer(&self) -> Writer {
         let (send, receive) = mpsc::channel::<WriteBatch>();
         let root = self.root.clone();
-        let (regions, entity_regions) = (self.regions.clone(), self.entity_regions.clone());
+        let (regions, entity_regions, poi_regions) = (
+            self.regions.clone(),
+            self.entity_regions.clone(),
+            self.poi_regions.clone(),
+        );
         let pending = self.pending.clone();
         let outstanding = self.outstanding.clone();
         let thread = std::thread::Builder::new()
             .name("horizon-region-writer".into())
             .spawn(move || {
-                for (entities, batch) in receive {
-                    let (folder, cache) = if entities {
-                        ("entities", &entity_regions)
-                    } else {
-                        ("region", &regions)
+                for (kind, batch) in receive {
+                    let cache = match kind {
+                        Folder::Region => &regions,
+                        Folder::Entities => &entity_regions,
+                        Folder::Poi => &poi_regions,
                     };
+                    let folder = kind.name();
                     // IOWorker.pendingWrites: a chunk queued again since is
                     // written once, by its newest batch.
                     let newest = |k: &(i32, i32), seq: u64| {
                         pending.lock().map_or(true, |p| {
-                            p.get(&(entities, k.0, k.1)).is_none_or(|p| p.0 <= seq)
+                            p.get(&(kind, k.0, k.1)).is_none_or(|p| p.0 <= seq)
                         })
                     };
                     let records: Vec<_> = batch
@@ -1875,11 +1998,8 @@ impl SaveDir {
                         && let Ok(mut pending) = pending.lock()
                     {
                         for (k, _, seq) in &batch {
-                            if pending
-                                .get(&(entities, k.0, k.1))
-                                .is_some_and(|p| p.0 == *seq)
-                            {
-                                pending.remove(&(entities, k.0, k.1));
+                            if pending.get(&(kind, k.0, k.1)).is_some_and(|p| p.0 == *seq) {
+                                pending.remove(&(kind, k.0, k.1));
                             }
                         }
                     }
@@ -1948,7 +2068,25 @@ impl SaveDir {
             })
             .collect();
         self.write_records("region", records, true)?;
+        self.save_poi(chunks, true)?;
         Ok(chunks.len())
+    }
+    /// The POI records of saved chunks; a chunk that has none any more but
+    /// had a record gets an empty one, as vanilla trusts a saved section.
+    fn save_poi(&self, chunks: &[Arc<Chunk>], wait: bool) -> Result<()> {
+        let Some(tables) = self.tables.get() else {
+            return Ok(());
+        };
+        let records = chunks
+            .iter()
+            .filter_map(|c| match encode_poi(c, tables) {
+                Some(tag) => Some(((c.x, c.z), Some(tag))),
+                None => self
+                    .read_record("poi", c.x, c.z)
+                    .map(|_| ((c.x, c.z), Some(poi_root(Compound::new())))),
+            })
+            .collect();
+        self.write_records("poi", records, wait)
     }
     /// `save` on the writer thread: returns before the files are written;
     /// loads see the chunks meanwhile.
@@ -1968,7 +2106,8 @@ impl SaveDir {
             .iter()
             .map(|c| ((c.x, c.z), Record::Chunk(c.clone(), encoding.clone())))
             .collect();
-        self.queue(false, records, false)?;
+        self.queue(Folder::Region, records, false)?;
+        self.save_poi(chunks, false)?;
         Ok(chunks.len())
     }
     /// Write the entity chunks (`EntityStorage`): an empty list deletes it.
@@ -3413,7 +3552,7 @@ impl SaveDir {
             .pending
             .lock()
             .ok()?
-            .get(&(false, x, z))
+            .get(&(Folder::Region, x, z))
             .map(|(_, record)| record.clone());
         let root = if let Some(record) = pending {
             record.tag().map(|tag| (*tag).clone())?
@@ -3644,6 +3783,67 @@ mod tests {
         let opened = saved_chest(&chunk);
         assert!(opened.get("LootTable").is_none());
         assert!(opened.get("Items").is_some());
+    }
+
+    #[test]
+    fn points_of_interest_save_as_poi_sections() {
+        let Some(root) = std::env::var_os("HORIZON_TEST_RESOURCES") else {
+            return;
+        };
+        let assets = crate::assets::Assets::load(&PathBuf::from(root)).expect("assets");
+        let tables = SaveTables::new(&assets);
+        let state = |name: &str, props: &[(&str, &str)]| {
+            let mut s = assets
+                .registry
+                .state(assets.registry.default_state(name).unwrap())
+                .unwrap()
+                .clone();
+            for (k, v) in props {
+                s.properties.insert((*k).into(), (*v).into());
+            }
+            assets.registry.id(&s).unwrap().0
+        };
+        let mut chunk = Chunk::empty(2, -1);
+        chunk.set(1, 70, 1, state("minecraft:red_bed", &[("part", "head")]));
+        chunk.set(1, 70, 2, state("minecraft:red_bed", &[("part", "foot")]));
+        chunk.set(5, 71, 5, state("minecraft:bell", &[]));
+        chunk.set(6, 71, 5, state("minecraft:stone", &[]));
+        assert!(encode_poi(&Chunk::empty(0, 0), &tables).is_none());
+        let saved = encode_poi(&chunk, &tables).expect("records");
+        let Some(Tag::Compound(sections)) = saved.tag.get("Sections") else {
+            panic!("no sections");
+        };
+        assert_eq!(sections.len(), 1);
+        let section = &sections[&"4".into()];
+        assert_eq!(section.get("Valid"), Some(&Tag::Byte(1)));
+        let Some(Tag::List(records)) = section.get("Records") else {
+            panic!("no records");
+        };
+        let records: Vec<_> = records
+            .iter()
+            .map(|r| {
+                (
+                    text(r.get("type")).unwrap(),
+                    r.get("pos").cloned(),
+                    number(r.get("free_tickets")),
+                )
+            })
+            .collect();
+        assert_eq!(
+            records,
+            [
+                (
+                    "minecraft:home".into(),
+                    Some(Tag::IntArray(vec![33, 70, -15])),
+                    Some(1)
+                ),
+                (
+                    "minecraft:meeting".into(),
+                    Some(Tag::IntArray(vec![37, 71, -11])),
+                    Some(32)
+                ),
+            ]
+        );
     }
 
     #[test]
