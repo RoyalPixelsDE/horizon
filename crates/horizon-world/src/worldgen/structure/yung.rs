@@ -834,6 +834,8 @@ impl Assembler<'_> {
                         source_x: slot.target_pos[0],
                         source_ground_y: junction_y - local_y + source_ground,
                         source_z: slot.target_pos[2],
+                        delta_y,
+                        dest_projection: target.projection(),
                     };
                     self.pieces[slot.source].junctions.push(on_parent);
                     slot.free.borrow_mut().removed.push(target_box);
@@ -847,6 +849,12 @@ impl Assembler<'_> {
                             source_x: jigsaw.pos[0],
                             source_ground_y: junction_y - target_local[1] + target_ground,
                             source_z: jigsaw.pos[2],
+                            delta_y: -delta_y,
+                            dest_projection: if source_rigid {
+                                Projection::Rigid
+                            } else {
+                                Projection::TerrainMatching
+                            },
                         }],
                         waterlogging: self.config.waterlogging,
                     });
@@ -911,6 +919,7 @@ mod tests {
         Arc::new(PoolElement::Single {
             template: template.clone(),
             processors: Default::default(),
+            processors_source: serde_json::Value::Null,
             legacy: false,
             projection: Projection::Rigid,
             waterlogging: None,
@@ -1100,6 +1109,8 @@ mod tests {
                 source_x: 0,
                 source_ground_y: 0,
                 source_z: 0,
+                delta_y: 0,
+                dest_projection: Projection::Rigid,
             }],
             waterlogging: false,
         };
