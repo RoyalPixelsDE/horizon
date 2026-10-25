@@ -280,7 +280,8 @@ impl Game<'_> {
                     k if super::minecarts::CartKind::from_id(k).is_some() => {
                         let kind = super::minecarts::CartKind::from_id(k).unwrap();
                         let id = self.next_entity + 1;
-                        if let Some(c) = super::minecarts::Minecart::from_nbt(&tag, id, kind) {
+                        if let Some(mut c) = super::minecarts::Minecart::from_nbt(&tag, id, kind) {
+                            self.roll_cart_loot(&mut c, &tag);
                             self.next_entity = id;
                             self.remember(id, uuid, tag);
                             self.carts.push(c);
@@ -527,6 +528,48 @@ impl Game<'_> {
     /// The compound an entity was loaded with (and commands have edited).
     pub(super) fn persist_raw(&self, id: u32) -> Option<&Tag> {
         self.persist.raw.get(&id)
+    }
+    /// A loaded chest minecart with a loot table and no items: the table
+    /// rolled now, as generated containers are (Horizon does not unpack on
+    /// first open), and kept to save it again while unchanged.
+    fn roll_cart_loot(&self, cart: &mut super::minecarts::Minecart, tag: &Tag) {
+        let Some(table) = horizon_client::save::text(tag.get("LootTable")) else {
+            return;
+        };
+        if cart.items.is_empty() || cart.items.iter().any(Option::is_some) {
+            return;
+        }
+        let Some(loot) = horizon_client::structure_blocks::loot_data(&self.options.resources)
+        else {
+            return;
+        };
+        let p = cart.position;
+        let pos = (p.x.floor() as i32, p.y.floor() as i32, p.z.floor() as i32);
+        let biome = self
+            .world
+            .chunks
+            .get(&(pos.0 >> 4, pos.2 >> 4))
+            .map(|c| {
+                self.res.biomes().list[c.biome(pos.0, pos.1, pos.2) as usize]
+                    .name
+                    .clone()
+            })
+            .unwrap_or_default();
+        let seed = horizon_client::structure_blocks::loot_seed(tag);
+        horizon_client::structure_blocks::roll_container(
+            &mut cart.items,
+            &loot,
+            &table,
+            seed,
+            pos,
+            &biome,
+        );
+        cart.loot = Some(horizon_client::save::RolledLoot {
+            pos,
+            table,
+            seed,
+            items: horizon_client::save::encode_items(&cart.items),
+        });
     }
     fn remember(&mut self, id: u32, uuid: Option<[i32; 4]>, tag: Tag) {
         self.restore_portal_cooldown(id, &tag);
