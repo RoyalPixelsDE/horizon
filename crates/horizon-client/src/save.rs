@@ -297,6 +297,20 @@ impl SaveTables {
     }
 }
 
+/// A container's loot table and what Horizon rolled from it. Vanilla keeps
+/// `LootTable` and `LootTableSeed` until the container is first opened;
+/// Horizon rolls when it generates or loads the chunk, and saves the table
+/// again while the container still holds exactly the rolled items.
+#[derive(Clone, Debug, PartialEq)]
+pub struct RolledLoot {
+    pub pos: (i32, i32, i32),
+    pub table: String,
+    /// The saved `LootTableSeed`, written back as it was.
+    pub seed: Option<i64>,
+    /// The rolled `Items`.
+    pub items: Tag,
+}
+
 /// Save data loaded with a chunk that Horizon keeps but does not simulate.
 #[derive(Clone, Debug, Default)]
 pub struct ChunkExtras {
@@ -318,6 +332,8 @@ pub struct ChunkExtras {
     pub fluid_ticks: Vec<SavedTick>,
     /// Game time written as `LastUpdate`.
     pub last_update: i64,
+    /// Containers still holding their loot table's roll.
+    pub rolled_loot: Vec<RolledLoot>,
 }
 
 fn tick_list(ticks: &[SavedTick], name: impl Fn(u32) -> Option<String>) -> Tag {
@@ -566,6 +582,33 @@ fn merge_block_entity(original: &Tag, loaded: &Tag, current: &Tag) -> Tag {
         map.remove(&"LootTableSeed".into());
     }
     merged
+}
+/// A loaded container with a loot table and no items yet, rolled as
+/// generation rolls it (Horizon does not unpack on first open).
+fn roll_loaded_loot(
+    chunk: &Chunk,
+    biomes: &Biomes,
+    tag: &Tag,
+    be: &mut ((i32, i32, i32), crate::containers::BlockEntity),
+) -> Option<RolledLoot> {
+    let crate::containers::BlockEntity::Chest(slots) = &mut be.1 else {
+        return None;
+    };
+    let table = text(tag.get("LootTable"))?;
+    if slots.iter().any(Option::is_some) {
+        return None;
+    }
+    let loot = crate::structure_blocks::loaded_loot_data()?;
+    let (x, y, z) = be.0;
+    let biome = &biomes.get(chunk.biome(x & 15, y, z & 15)).name;
+    let seed = crate::structure_blocks::loot_seed(tag);
+    crate::structure_blocks::roll_container(slots, &loot, &table, seed, be.0, biome);
+    Some(RolledLoot {
+        pos: be.0,
+        table,
+        seed,
+        items: encode_items(slots),
+    })
 }
 pub fn decode_block_entity(tag: &Tag) -> Option<((i32, i32, i32), crate::containers::BlockEntity)> {
     use crate::containers::BlockEntity;
@@ -978,7 +1021,18 @@ pub fn encode_with(
                 }
                 None => current,
             };
-            crate::block_entity_nbt::canonical(&merged).unwrap_or(merged)
+            let mut saved = crate::block_entity_nbt::canonical(&merged).unwrap_or(merged);
+            if let Some(r) = extras.and_then(|x| x.rolled_loot.iter().find(|r| r.pos == *p))
+                && let Tag::Compound(map) = &mut saved
+                && map.get(&"Items".into()) == Some(&r.items)
+            {
+                map.remove(&"Items".into());
+                map.insert("LootTable".into(), string(&r.table));
+                if let Some(seed) = r.seed {
+                    map.insert("LootTableSeed".into(), Tag::Long(seed));
+                }
+            }
+            saved
         })
         .collect();
     if let Some(extras) = extras {
@@ -1208,9 +1262,12 @@ fn decode_column(
                 extras.block_entity_order.push((x, y, z));
             }
             match decode_block_entity(e) {
-                Some(be) => {
+                Some(mut be) => {
                     if let Some(name) = text(e.get("CustomName")) {
                         chunk.block_names.push((be.0, name));
+                    }
+                    if let Some(rolled) = roll_loaded_loot(&chunk, biomes, e, &mut be) {
+                        extras.rolled_loot.push(rolled);
                     }
                     extras.block_entity_sources.push((be.0, e.clone()));
                     chunk.block_entities.push(be);
@@ -3519,6 +3576,64 @@ mod tests {
             LevelShape::for_dir(Path::new("w/DIM-1")),
             LevelShape::NETHER
         );
+    }
+
+    #[test]
+    fn unopened_rolled_containers_save_their_loot_table() {
+        let Some(root) = std::env::var_os("HORIZON_TEST_RESOURCES") else {
+            return;
+        };
+        let root = PathBuf::from(root);
+        let assets = crate::assets::Assets::load(&root).expect("assets");
+        let biomes = Biomes::load(&root).expect("biomes");
+        let tables = SaveTables::new(&assets);
+        let chest = assets.registry.default_state("minecraft:chest").unwrap();
+        let mut slots = vec![None; 27];
+        slots[3] = Some(crate::items::ItemStack::new("minecraft:bone", 2));
+        let mut chunk = Chunk::empty(0, 0);
+        chunk.set(1, 64, 2, chest.0);
+        chunk.block_entities.push((
+            (1, 64, 2),
+            crate::containers::BlockEntity::Chest(slots.clone()),
+        ));
+        let rolled = RolledLoot {
+            pos: (1, 64, 2),
+            table: "minecraft:chests/simple_dungeon".into(),
+            seed: Some(42),
+            items: encode_items(&slots),
+        };
+        chunk.saved = Some(Arc::new(ChunkExtras {
+            rolled_loot: vec![rolled],
+            ..ChunkExtras::default()
+        }));
+        let saved_chest = |chunk: &Chunk| -> Tag {
+            let saved = encode_with(
+                chunk,
+                assets.registry,
+                &biomes,
+                Some(&tables),
+                LevelShape::OVERWORLD,
+            );
+            let Some(Tag::List(list)) = saved.tag.get("block_entities") else {
+                panic!("no block entities");
+            };
+            list[0].clone()
+        };
+        let unopened = saved_chest(&chunk);
+        assert_eq!(
+            text(unopened.get("LootTable")).as_deref(),
+            Some("minecraft:chests/simple_dungeon")
+        );
+        assert_eq!(number(unopened.get("LootTableSeed")), Some(42));
+        assert!(unopened.get("Items").is_none());
+        // Taking an item makes the items the container's own.
+        if let crate::containers::BlockEntity::Chest(s) = &mut chunk.block_entities[0].1 {
+            s[3] = None;
+            s[4] = Some(crate::items::ItemStack::new("minecraft:bone", 1));
+        }
+        let opened = saved_chest(&chunk);
+        assert!(opened.get("LootTable").is_none());
+        assert!(opened.get("Items").is_some());
     }
 
     #[test]
