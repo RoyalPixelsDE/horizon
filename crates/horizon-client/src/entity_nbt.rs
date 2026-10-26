@@ -225,6 +225,26 @@ pub fn mob_to_nbt(m: &Mob, uuid: [i32; 4], raw: Option<&Tag>) -> Tag {
     if is_animal(id) {
         map.insert("InLove".into(), Tag::Int(m.extra.in_love.max(0)));
     }
+    let species = m.species();
+    if matches!(
+        species,
+        crate::mobs::Species::Pig | crate::mobs::Species::Cow | crate::mobs::Species::Chicken
+    ) {
+        let variant = crate::mobs::finalize::variant_name(species, m.extra.variant);
+        map.insert("variant".into(), string(&format!("minecraft:{variant}")));
+    }
+    if species == crate::mobs::Species::Chicken {
+        map.insert("EggLayTime".into(), Tag::Int(m.extra.egg_time));
+    }
+    let sounds = crate::mobs::finalize::sound_variants(species);
+    if !sounds.is_empty() {
+        let sound = m.extra.sound_variant.and_then(|i| sounds.get(i as usize));
+        let sound = sound.copied().unwrap_or("classic");
+        map.insert(
+            "sound_variant".into(),
+            string(&format!("minecraft:{sound}")),
+        );
+    }
     match id {
         "minecraft:creeper" => {
             for (key, value) in [("Fuse", Tag::Short(30)), ("ExplosionRadius", Tag::Byte(3))] {
@@ -243,8 +263,6 @@ pub fn mob_to_nbt(m: &Mob, uuid: [i32; 4], raw: Option<&Tag>) -> Tag {
             map.insert("CollarColor".into(), Tag::Byte(m.extra.color as i8));
             let variant = crate::mobs::tame::CAT_VARIANTS[(m.extra.variant as usize).min(10)];
             map.insert("variant".into(), string(&format!("minecraft:{variant}")));
-            map.entry("sound_variant".into())
-                .or_insert_with(|| string("minecraft:classic"));
         }
         "minecraft:wolf" => {
             if let Some(owner) = m.extra.owner {
@@ -256,8 +274,6 @@ pub fn mob_to_nbt(m: &Mob, uuid: [i32; 4], raw: Option<&Tag>) -> Tag {
             map.insert("CollarColor".into(), Tag::Byte(m.extra.color as i8));
             let variant = crate::mobs::tame::WOLF_VARIANTS[(m.extra.variant as usize).min(8)].0;
             map.insert("variant".into(), string(&format!("minecraft:{variant}")));
-            map.entry("sound_variant".into())
-                .or_insert_with(|| string("minecraft:classic"));
         }
         "minecraft:piglin" | "minecraft:piglin_brute" | "minecraft:hoglin" => {
             map.insert(
@@ -792,6 +808,23 @@ pub fn mob_from_nbt(tag: &Tag, types: &HashMap<String, Arc<MobType>>, id: u32) -
         if m.extra.vector[0] <= 0.0 {
             m.extra.vector[0] = 0.7;
         }
+    }
+    if matches!(
+        m.species(),
+        crate::mobs::Species::Pig | crate::mobs::Species::Cow | crate::mobs::Species::Chicken
+    ) && let Some(v) = text(tag.get("variant"))
+    {
+        m.extra.variant = crate::mobs::finalize::variant_index(m.species(), &v);
+    }
+    if m.species() == crate::mobs::Species::Chicken
+        && let Some(t) = number(tag.get("EggLayTime"))
+    {
+        m.extra.egg_time = t as i32;
+    }
+    if let Some(v) = text(tag.get("sound_variant")) {
+        let v = v.trim_start_matches("minecraft:");
+        let sounds = crate::mobs::finalize::sound_variants(m.species());
+        m.extra.sound_variant = sounds.iter().position(|n| *n == v).map(|i| i as u8);
     }
     if m.species() == crate::mobs::Species::Cat {
         m.extra.owner = crate::save::uuid_from_tag(tag.get("Owner"));
@@ -2424,6 +2457,47 @@ mod sheep_nbt_tests {
             .collect();
         let back = mob_from_nbt(&tag, &types, 2).unwrap();
         assert_eq!((back.extra.color, back.extra.sheared), (14, true));
+    }
+
+    #[test]
+    fn farm_animals_keep_their_variant_and_sound_variant() {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../.local/horizon-client")
+            .join(horizon_core::VANILLA_VERSION);
+        if !root.join("items.json").exists() {
+            return;
+        }
+        let data = crate::mobs::MobTypes::load(&root).unwrap();
+        let types: HashMap<String, Arc<MobType>> = data
+            .types
+            .iter()
+            .map(|(k, v)| (k.clone(), Arc::new(v.clone())))
+            .collect();
+        let mut m = Mob::new(
+            1,
+            types["minecraft:pig"].clone(),
+            Vec3::new(0.0, 4.0, 0.0),
+            0.0,
+        );
+        let tag = mob_to_nbt(&m, [1, 2, 3, 4], None);
+        assert_eq!(
+            text(tag.get("variant")).as_deref(),
+            Some("minecraft:temperate")
+        );
+        assert_eq!(
+            text(tag.get("sound_variant")).as_deref(),
+            Some("minecraft:classic")
+        );
+        // Spawned in a warm biome with the mini sounds.
+        (m.extra.variant, m.extra.sound_variant) = (1, Some(2));
+        let tag = mob_to_nbt(&m, [1, 2, 3, 4], None);
+        assert_eq!(text(tag.get("variant")).as_deref(), Some("minecraft:warm"));
+        assert_eq!(
+            text(tag.get("sound_variant")).as_deref(),
+            Some("minecraft:mini")
+        );
+        let back = mob_from_nbt(&tag, &types, 2).unwrap();
+        assert_eq!((back.extra.variant, back.extra.sound_variant), (1, Some(2)));
     }
 }
 
