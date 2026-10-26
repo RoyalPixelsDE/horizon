@@ -526,11 +526,13 @@ pub fn to_nbt(m: &Mob, map: &mut horizon_world::nbt::Compound) {
         map.remove(&"Owner".into());
     }
     map.insert("Sitting".into(), Tag::Byte(0));
-    // AgeableMob and Animal (a water creature is not saved with them above).
-    map.insert("Age".into(), Tag::Int(m.extra.age));
-    map.insert("AgeLocked".into(), Tag::Byte(i8::from(m.extra.age_locked)));
+    // AgeableMob (only if canBeABaby: not the zombie) and Animal.
+    if !zombie(m) {
+        map.insert("Age".into(), Tag::Int(m.extra.age));
+        map.insert("AgeLocked".into(), Tag::Byte(i8::from(m.extra.age_locked)));
+        map.entry("ForcedAge".into()).or_insert(Tag::Int(0));
+    }
     map.insert("InLove".into(), Tag::Int(m.extra.in_love.max(0)));
-    map.entry("ForcedAge".into()).or_insert(Tag::Int(0));
     if zombie(m) {
         let v = VARIANTS[usize::from(m.extra.variant).min(1)];
         map.insert(

@@ -91,6 +91,19 @@ impl Base<'_> {
 /// `LivingEntity` + `Mob` (+ `AgeableMob`, creeper and skeleton specifics).
 /// The mobs whose class extends vanilla's `Animal` (and so save `InLove`):
 /// not allays, villagers, golems, dolphins or fish.
+/// The mobs that save `IsBaby` rather than an age.
+fn is_baby_flagged(id: &str) -> bool {
+    matches!(
+        id,
+        "minecraft:zombie"
+            | "minecraft:husk"
+            | "minecraft:drowned"
+            | "minecraft:zombie_villager"
+            | "minecraft:zombified_piglin"
+            | "minecraft:piglin"
+            | "minecraft:zoglin"
+    )
+}
 fn is_animal(id: &str) -> bool {
     matches!(
         id.strip_prefix("minecraft:").unwrap_or(id),
@@ -225,10 +238,10 @@ pub fn mob_to_nbt(m: &Mob, uuid: [i32; 4], raw: Option<&Tag>) -> Tag {
         map.entry(key.into()).or_insert(value);
     }
     let id = m.kind.id.as_str();
-    // Only breedable animals have an age; a loaded creature that was saved without
-    // one (a frog) stays without.
-    let aged = raw.is_none_or(|r| r.get("Age").is_some());
-    if (m.kind.category == "creature" || m.species() == crate::mobs::Species::Hoglin) && aged {
+    // AgeableMob.addAdditionalSaveData, only if canBeABaby (not a frog or a
+    // parrot); the zombies and piglins save IsBaby instead.
+    let species = m.species();
+    if crate::mobs::drops::can_be_baby(species) && !is_baby_flagged(id) {
         map.insert("Age".into(), Tag::Int(m.extra.age));
         map.insert("AgeLocked".into(), Tag::Byte(i8::from(m.extra.age_locked)));
         map.insert("ForcedAge".into(), Tag::Int(m.extra.forced_age));
@@ -417,6 +430,8 @@ pub fn mob_to_nbt(m: &Mob, uuid: [i32; 4], raw: Option<&Tag>) -> Tag {
         }
         "minecraft:villager" => {
             map.insert("VillagerData".into(), villager_data(m));
+            // A loaded villager with VillagerData is finalized.
+            map.insert("VillagerDataFinalized".into(), Tag::Byte(1));
             let t = m.extra.trade.as_deref().cloned().unwrap_or_default();
             map.insert("Xp".into(), Tag::Int(t.xp));
             map.insert("LastRestock".into(), Tag::Long(t.last_restock));
@@ -554,20 +569,57 @@ pub fn mob_to_nbt(m: &Mob, uuid: [i32; 4], raw: Option<&Tag>) -> Tag {
             Tag::Byte(i8::from(m.extra.can_break_doors)),
         );
     }
+    if is_baby_flagged(id) {
+        map.insert("IsBaby".into(), Tag::Byte(i8::from(m.is_baby())));
+    }
+    // NeutralMob.addPersistentAngerSaveData; the bee saves its own.
     if matches!(
         id,
-        "minecraft:zombie"
-            | "minecraft:husk"
-            | "minecraft:drowned"
-            | "minecraft:zombie_villager"
+        "minecraft:iron_golem"
+            | "minecraft:wolf"
+            | "minecraft:polar_bear"
             | "minecraft:zombified_piglin"
-            | "minecraft:piglin"
-            | "minecraft:zoglin"
+            | "minecraft:enderman"
     ) {
-        map.insert("IsBaby".into(), Tag::Byte(i8::from(m.is_baby())));
+        map.entry("anger_end_time".into()).or_insert(Tag::Long(-1));
     }
     if let Some(a) = m.extra.attributes.as_deref() {
         put_attributes(map, m, a);
+    }
+    // Zombie and Piglin.setBaby, which their load runs even for an adult, make
+    // the speed attribute that AttributeMap.pack then saves.
+    if is_baby_flagged(id) && id != "minecraft:zoglin" {
+        let speed = crate::mobs::finalize::Attr::MovementSpeed;
+        let base = crate::mobs::finalize::base_value(m, speed);
+        let mut list = match map.get(&"attributes".into()) {
+            Some(Tag::List(l)) => l.clone(),
+            _ => Vec::new(),
+        };
+        let speed_id = format!("minecraft:{}", speed.name());
+        if !list
+            .iter()
+            .any(|t| text(t.get("id")).as_deref() == Some(speed_id.as_str()))
+        {
+            list.push(Tag::compound([
+                ("id", string(&speed_id)),
+                ("base", Tag::Double(base.to_bits())),
+            ]));
+            map.insert("attributes".into(), Tag::List(list));
+        }
+    }
+    // Mob.addAdditionalSaveData: the chances that are not the default.
+    if let Some(chances) = &m.extra.drop_chances {
+        let set: Vec<(&str, Tag)> = crate::mobs::drops::SLOTS
+            .iter()
+            .zip(chances.iter())
+            .filter(|(_, c)| **c != crate::mobs::drops::DEFAULT_DROP_CHANCE)
+            .map(|(slot, c)| (*slot, Tag::Float(c.to_bits())))
+            .collect();
+        if set.is_empty() {
+            map.remove(&"drop_chances".into());
+        } else {
+            map.insert("drop_chances".into(), Tag::compound(set));
+        }
     }
     crate::mobs::raider::write_nbt(m, map);
     crate::mobs::riders::write_nbt(m, map);
