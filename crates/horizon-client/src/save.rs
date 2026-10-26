@@ -3969,7 +3969,13 @@ mod tests {
             ..ChunkExtras::default()
         }));
         let saved_chest = |chunk: &Chunk| -> Tag {
-            let saved = encode_with(chunk, assets.registry, &biomes, Some(&tables), LevelShape::OVERWORLD);
+            let saved = encode_with(
+                chunk,
+                assets.registry,
+                &biomes,
+                Some(&tables),
+                LevelShape::OVERWORLD,
+            );
             let Some(Tag::List(list)) = saved.tag.get("block_entities") else {
                 panic!("no block entities");
             };
