@@ -8,7 +8,7 @@ use crate::{
     items::Items,
     mobs::{
         Mob, MobType, MobTypes,
-        finalize::{self, Ctx, FinalizeLevel, Reason, SpawnData, SpawnRegistries},
+        finalize::{self, Ctx, FinalizeLevel, Group, Reason, SpawnData, SpawnRegistries},
         spawning::{LocalDifficulty, MOON_BRIGHTNESS},
     },
 };
@@ -135,6 +135,8 @@ fn run<R: RandomSource>(
     difficulty: LocalDifficulty,
     data: &SpawnData<'_>,
     m: &mut Mob,
+    reason: Reason,
+    group: &mut Option<Group>,
 ) -> Vec<Mob> {
     let mut cx = Ctx {
         level,
@@ -144,7 +146,7 @@ fn run<R: RandomSource>(
         created: Vec::new(),
         jockey_rider: None,
     };
-    cx.finalize(m, Reason::Structure, None);
+    *group = cx.finalize(m, reason, group.take());
     if let Some(rider) = cx.jockey_rider {
         debug_assert_eq!(rider.id, m.id);
         *m = rider;
@@ -190,6 +192,23 @@ impl StructureMobs for StructureMobFinalizer {
         structures: &[String],
         random: &mut dyn PieceRandom,
     ) -> bool {
+        self.finalize_as(nbt, biome, structures, random, Reason::Structure, &mut None)
+    }
+}
+
+impl StructureMobFinalizer {
+    /// `finalizeSpawn` with `reason` of the mob in `nbt` as generation adds it,
+    /// with the region's random; `group` carries a pack's group data from one
+    /// member to the next.
+    pub fn finalize_as(
+        &self,
+        nbt: &mut Compound,
+        biome: &str,
+        structures: &[String],
+        random: &mut dyn PieceRandom,
+        reason: Reason,
+        group: &mut Option<Group>,
+    ) -> bool {
         let Some(data) = self.data.get_or_init(|| {
             let data = load(&self.root);
             if data.is_none() {
@@ -228,9 +247,9 @@ impl StructureMobs for StructureMobFinalizer {
         };
         let any = random.as_any();
         let created = if let Some(r) = any.downcast_mut::<LegacyRandom>() {
-            run(&mut level, r, difficulty, &spawn, &mut m)
+            run(&mut level, r, difficulty, &spawn, &mut m, reason, group)
         } else if let Some(r) = any.downcast_mut::<XoroshiroRandom>() {
-            run(&mut level, r, difficulty, &spawn, &mut m)
+            run(&mut level, r, difficulty, &spawn, &mut m, reason, group)
         } else {
             log::error!("Horizon: unknown region random, structure mobs are finalized when loaded");
             return false;
