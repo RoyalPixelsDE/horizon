@@ -1,0 +1,19 @@
+spawn point: vanilla (16, 64, 80), other (16, 64, 80) OK
+stronghold: start at chunk (86, 53), 121 pieces; start NBT equal
+  blocks in its pieces: 34120 compared, 0 differ
+  end portal frames: 12, with an eye 2; 0 differ
+  containers: 9 in vanilla, 9 in other; 0 differ
+  spawners: 1 in vanilla, 1 in other; 0 differ
+  mobs: 0 in vanilla, 0 in other; missing 0, extra 0, field diffs 0
+fortress: start at chunk (17, 12), 95 pieces; start NBT equal
+  blocks in its pieces: 53264 compared, 1 differ 
+    ((226, 58, 224), 'minecraft:red_mushroom', 'minecraft:air')
+  containers: 2 in vanilla, 2 in other; 0 differ
+  spawners: 2 in vanilla, 2 in other; 0 differ
+  mobs: 0 in vanilla, 0 in other; missing 0, extra 0, field diffs 0
+bastion_remnant: start at chunk (-7, -14), 87 pieces; start NBT equal
+  blocks in its pieces: 82496 compared, 0 differ
+  containers: 11 in vanilla, 11 in other; 0 differ
+  spawners: 0 in vanilla, 0 in other; 0 differ
+  mobs: 30 in vanilla, 30 in other; missing 0, extra 0, field diffs 0
+1 CHECKS WITH DIFFERENCES

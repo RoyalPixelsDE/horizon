@@ -1,0 +1,17 @@
+check                                        live-vanilla    live-horizon
+pig sound variant other than classic          28 of 40         0 of 40   
+cow sound variant other than classic          19 of 40         0 of 40   
+cat sound variant other than classic          18 of 40         0 of 40   
+parrot variant other than red                 29 of 40         0 of 40   
+panda gene other than normal                  29 of 40        40 of 40   
+goat screaming or missing a horn               8 of 100        0 of 100  
+creeper with the random spawn bonus           20 of 20         0 of 20   
+skeleton left-handed                           9 of 200        0 of 200  
+zombie PersistenceRequired                     0 of 20        20 of 20   
+piglin baby                                   22 of 100        0 of 100  
+zombified piglin baby                         13 of 200        0 of 200  
+hoglin baby                                   25 of 100        0 of 100  
+drowned with a nautilus shell                  7 of 300        0 of 300  
+spider with an effect (Hard)                   2 of 300        0 of 300  
+spider with a rider                            3 of 300        0 of 300  
+wither skeleton attack damage base                    4.0             2.0

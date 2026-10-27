@@ -1,0 +1,35 @@
+{
+ "stronghold": {
+  "dim": "overworld",
+  "x": -1136,
+  "z": 848,
+  "box": [
+   -87,
+   37,
+   -55,
+   69
+  ]
+ },
+ "fortress": {
+  "dim": "the_nether",
+  "x": -96,
+  "z": 144,
+  "box": [
+   -13,
+   2,
+   1,
+   16
+  ]
+ },
+ "bastion_remnant": {
+  "dim": "the_nether",
+  "x": 192,
+  "z": 0,
+  "box": [
+   7,
+   -5,
+   17,
+   5
+  ]
+ }
+}

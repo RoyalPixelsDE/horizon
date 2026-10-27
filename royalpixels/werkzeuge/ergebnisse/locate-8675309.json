@@ -1,0 +1,366 @@
+{
+ "village_plains": {
+  "dim": "overworld",
+  "x": -304,
+  "z": -320,
+  "box": [
+   -23,
+   -24,
+   -15,
+   -16
+  ]
+ },
+ "village_desert": {
+  "dim": "overworld",
+  "x": -544,
+  "z": -1424,
+  "box": [
+   -38,
+   -93,
+   -30,
+   -85
+  ]
+ },
+ "village_savanna": {
+  "dim": "overworld",
+  "x": -880,
+  "z": -352,
+  "box": [
+   -59,
+   -26,
+   -51,
+   -18
+  ]
+ },
+ "village_snowy": {
+  "dim": "overworld",
+  "x": 5232,
+  "z": 1792,
+  "box": [
+   323,
+   108,
+   331,
+   116
+  ]
+ },
+ "village_taiga": {
+  "dim": "overworld",
+  "x": 1760,
+  "z": 1232,
+  "box": [
+   106,
+   73,
+   114,
+   81
+  ]
+ },
+ "pillager_outpost": {
+  "dim": "overworld",
+  "x": -688,
+  "z": 816,
+  "box": [
+   -46,
+   48,
+   -40,
+   54
+  ]
+ },
+ "mansion": {
+  "dim": "overworld",
+  "x": -1008,
+  "z": -3152,
+  "box": [
+   -68,
+   -202,
+   -58,
+   -192
+  ]
+ },
+ "monument": {
+  "dim": "overworld",
+  "x": 544,
+  "z": 176,
+  "box": [
+   30,
+   7,
+   38,
+   15
+  ]
+ },
+ "desert_pyramid": {
+  "dim": "overworld",
+  "x": -1536,
+  "z": -1232,
+  "box": [
+   -99,
+   -80,
+   -93,
+   -74
+  ]
+ },
+ "jungle_pyramid": {
+  "dim": "overworld",
+  "x": -976,
+  "z": -1920,
+  "box": [
+   -64,
+   -123,
+   -58,
+   -117
+  ]
+ },
+ "swamp_hut": {
+  "dim": "overworld",
+  "x": -784,
+  "z": 3424,
+  "box": [
+   -52,
+   211,
+   -46,
+   217
+  ]
+ },
+ "igloo": {
+  "dim": "overworld",
+  "x": -272,
+  "z": 4896,
+  "box": [
+   -20,
+   303,
+   -14,
+   309
+  ]
+ },
+ "shipwreck": {
+  "dim": "overworld",
+  "x": 304,
+  "z": 160,
+  "box": [
+   16,
+   7,
+   22,
+   13
+  ]
+ },
+ "shipwreck_beached": {
+  "dim": "overworld",
+  "x": -944,
+  "z": -528,
+  "box": [
+   -62,
+   -36,
+   -56,
+   -30
+  ]
+ },
+ "buried_treasure": {
+  "dim": "overworld",
+  "x": 185,
+  "z": 169,
+  "box": [
+   8,
+   7,
+   14,
+   13
+  ]
+ },
+ "ocean_ruin_cold": {
+  "dim": "overworld",
+  "x": 448,
+  "z": -160,
+  "box": [
+   25,
+   -13,
+   31,
+   -7
+  ]
+ },
+ "ocean_ruin_warm": {
+  "dim": "overworld",
+  "x": 80,
+  "z": -320,
+  "box": [
+   2,
+   -23,
+   8,
+   -17
+  ]
+ },
+ "ruined_portal": {
+  "dim": "overworld",
+  "x": -496,
+  "z": -528,
+  "box": [
+   -34,
+   -36,
+   -28,
+   -30
+  ]
+ },
+ "ruined_portal_desert": {
+  "dim": "overworld",
+  "x": -1728,
+  "z": -896,
+  "box": [
+   -111,
+   -59,
+   -105,
+   -53
+  ]
+ },
+ "ruined_portal_ocean": {
+  "dim": "overworld",
+  "x": 240,
+  "z": 240,
+  "box": [
+   12,
+   12,
+   18,
+   18
+  ]
+ },
+ "stronghold": {
+  "dim": "overworld",
+  "x": 1376,
+  "z": 848,
+  "box": [
+   81,
+   48,
+   91,
+   58
+  ]
+ },
+ "ancient_city": {
+  "dim": "overworld",
+  "x": -528,
+  "z": 1664,
+  "box": [
+   -38,
+   99,
+   -28,
+   109
+  ]
+ },
+ "trail_ruins": {
+  "dim": "overworld",
+  "x": 112,
+  "z": 320,
+  "box": [
+   4,
+   17,
+   10,
+   23
+  ]
+ },
+ "trial_chambers": {
+  "dim": "overworld",
+  "x": 192,
+  "z": 176,
+  "box": [
+   7,
+   6,
+   17,
+   16
+  ]
+ },
+ "mineshaft": {
+  "dim": "overworld",
+  "x": -16,
+  "z": 64,
+  "box": [
+   -4,
+   1,
+   2,
+   7
+  ]
+ },
+ "mineshaft_mesa": null,
+ "abandoned_camp_forest": {
+  "dim": "overworld",
+  "x": -848,
+  "z": 288,
+  "box": [
+   -56,
+   15,
+   -50,
+   21
+  ]
+ },
+ "abandoned_camp_taiga": {
+  "dim": "overworld",
+  "x": 3120,
+  "z": 1328,
+  "box": [
+   192,
+   80,
+   198,
+   86
+  ]
+ },
+ "abandoned_camp_savanna": {
+  "dim": "overworld",
+  "x": -160,
+  "z": -592,
+  "box": [
+   -13,
+   -40,
+   -7,
+   -34
+  ]
+ },
+ "fortress": {
+  "dim": "the_nether",
+  "x": 272,
+  "z": 192,
+  "box": [
+   12,
+   7,
+   22,
+   17
+  ]
+ },
+ "bastion_remnant": {
+  "dim": "the_nether",
+  "x": -112,
+  "z": -224,
+  "box": [
+   -11,
+   -18,
+   -3,
+   -10
+  ]
+ },
+ "ruined_portal_nether": {
+  "dim": "the_nether",
+  "x": 240,
+  "z": 240,
+  "box": [
+   12,
+   12,
+   18,
+   18
+  ]
+ },
+ "nether_fossil": {
+  "dim": "the_nether",
+  "x": -96,
+  "z": 288,
+  "box": [
+   -9,
+   15,
+   -3,
+   21
+  ]
+ },
+ "end_city": {
+  "dim": "the_end",
+  "x": 0,
+  "z": 1040,
+  "box": [
+   -5,
+   60,
+   5,
+   70
+  ]
+ }
+}

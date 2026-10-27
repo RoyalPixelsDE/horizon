@@ -1,0 +1,18 @@
+spawn point: vanilla (96, 145, -32), other (96, 145, -32) OK
+stronghold: start at chunk (110, 23), 163 pieces; start NBT equal
+  blocks in its pieces: 40695 compared, 0 differ
+  end portal frames: 12, with an eye 1; 0 differ
+  containers: 9 in vanilla, 9 in other; 0 differ
+  spawners: 1 in vanilla, 1 in other; 0 differ
+  mobs: 0 in vanilla, 0 in other; missing 0, extra 0, field diffs 0
+fortress: start at chunk (-13, -37), 74 pieces; start NBT equal
+  blocks in its pieces: 49680 compared, 0 differ
+  containers: 5 in vanilla, 5 in other; 0 differ
+  spawners: 2 in vanilla, 2 in other; 0 differ
+  mobs: 0 in vanilla, 0 in other; missing 0, extra 0, field diffs 0
+bastion_remnant: start at chunk (11, -16), 48 pieces; start NBT equal
+  blocks in its pieces: 77060 compared, 0 differ
+  containers: 5 in vanilla, 5 in other; 0 differ
+  spawners: 0 in vanilla, 0 in other; 0 differ
+  mobs: 29 in vanilla, 29 in other; missing 0, extra 0, field diffs 0
+ALL ZERO

@@ -1,0 +1,49 @@
+<h1>Worldgen comparison: Vanilla, Paper and Horizon, third round</h1>
+<p class="sub">27 October 2026. Minecraft 26.3. Seeds 12345, 1 and 8675309. 1,024 x 1,024 blocks around 0,0 (4,096 chunks) in the Overworld, the Nether and the End; the animal and speed tests as described below.</p>
+<h2>Question</h2>
+<p>Can Horizon replace our Paper + Chunky seed generator for vanilla worlds? This round fixes what the second report left open, looks at animals and entity save fields for the first time, and measures speed with Horizon's own pre-generation command.</p>
+<h2>Setup</h2>
+<ul>
+<li><b>Vanilla</b>: the 26.3 server, chunks force-loaded in batches, ticks frozen, game rules set in every dimension. A <b>second vanilla run</b> of each seed shows how much vanilla differs from itself.</li>
+<li><b>Paper + Chunky</b>: Paper 26.3 build 223 with Chunky, as our seed generator runs.</li>
+<li><b>Horizon 0.2.69</b>: the current upstream release.</li>
+<li><b>Horizon with our fixes</b>: upstream main of 27 October, which now holds 20 of our fixes, plus the open ones: the maintainer's #2698 (carrying our #2544 and #2586), #2608, #2706 and #2716. This is the test build royalpixels-2026-10-27.</li>
+<li><b>Animals</b>: our seed generator runs with vanilla's default game rules, so chunk generation places animals. This test generates 512 x 512 blocks of the Overworld with mob spawning on and ticks frozen, and compares every animal by the chunk it stands in.</li>
+<li><b>Speed</b>: Horizon generates with its own <code>/pregen</code> command, the counterpart of Chunky, on the same machine (12 threads) and the same area as Paper.</li>
+</ul>
+<h2>Summary</h2>
+{SUMMARY}
+<h2>Horizon before and after</h2>
+{BEFORE_AFTER}
+<h2>Animals</h2>
+{ANIMALS}
+<p>Before this round, a Horizon world generated with ticks frozen had <b>no animals at all</b> (seed 12345: 0 of 25). Now Horizon places them as vanilla does. The chunks where animals still differ are chunks where vanilla's own decoration differs between runs (a giant mushroom, a tree), so a second vanilla run differs there too. In seed 12345 the two such chunks lie next to the spawn, where the startup order now follows vanilla's.</p>
+<h2>Speed</h2>
+{SPEED}
+<p>On the small 1,024-block area, Horizon is 1.6 times as fast as Paper + Chunky with a seventh of the memory (1.1 against 7.3 GB). On a larger area the start-up share falls away: a 2,000 x 2,000 Overworld (15,876 chunks) took Horizon 36 seconds, 443 chunks per second, about 2.8 times Paper's rate. Two thirds of Horizon's time goes into the raw terrain (noise and surface rules), a fifth into decoration.</p>
+<h2>Result</h2>
+<ul>
+<li><b>Horizon with our fixes matches vanilla as closely as a second vanilla run, or closer.</b> Overworld blocks differ 0.15 % (second vanilla run 0.17 %), Nether 0.23 % (0.32 %), the End not at all. Loot 99.4 % (Paper 99.1 %).</li>
+<li><b>Animals and entities</b> now match vanilla within vanilla's own run-to-run differences: positions, variants, sound variants, babies, villagers, cats, golems, horses, foxes, rabbits, goats and minecarts.</li>
+<li><b>Speed</b>: faster than Paper + Chunky on every seed, 2.8 times on a large area.</li>
+<li><b>Horizon 0.2.69 as released still cannot be used</b>: no structure starts, no points of interest, wrong Nether heightmaps, no End entities.</li>
+</ul>
+<h2>What this round fixed</h2>
+<ul>
+<li><b>Animals at generation</b> (#2586, carried in #2698): placed while generating, as vanilla, with its random; before, only on a game tick, so a frozen world had none.</li>
+<li><b>Variants</b> (#2541, #2585, merged): pigs, cows, chickens, frogs, foxes and rabbits kept their variant and sound variant; goats their horns; horses a health above their maximum.</li>
+<li><b>Structure mobs' save fields</b> (#2544, carried in #2698): villagers, cats, iron golems, drowned and jockeys saved as vanilla's proto chunk keeps them.</li>
+<li><b>Minecarts</b> (#2543, merged): <code>HasTicked</code> and <code>Fire</code> as vanilla.</li>
+<li><b>Bee nests</b>: generated nests were empty; fixed on main in the meantime (our #2542 was closed for that, its test is kept).</li>
+<li><b>Unlit edge</b> (#2619, merged): the outermost ring of a pre-generated area was saved without light.</li>
+<li><b>Spawn area of an empty server</b> (#2608): the dedicated server kept and generated an area around the spawn while nobody was on. It caused about 4,100 stone blocks and a mineshaft flag near the spawn to differ, and cost CPU when idle.</li>
+<li><b>Speed</b> (#2706): the surface step skips writes that change nothing (Nether surface 16 % faster, same output).</li>
+</ul>
+<h2>Remaining differences</h2>
+<ul>
+<li><b>Structure starts</b>: 9 of 427 differ, all mineshaft and fortress flags in chunks at the edge of the area, where Paper differs too, and one ocean ruin that a second vanilla run also changes.</li>
+<li><b>Points of interest</b>: bee nests sit on trees that vanilla itself places differently between runs (a second vanilla run differs by 14, Horizon by 16).</li>
+<li><b>Block entities</b>: about 2,000 sculk block entities differ in each direction in the ancient city of seed 12345, where sculk spreads randomly; a second vanilla run differs the same way.</li>
+<li><b>Light format</b>: Horizon also saves all-dark sky light arrays deep underground, where vanilla leaves them out. The light values are the same; the files are slightly larger.</li>
+<li><b>Forced area</b>: vanilla makes the two rings around a force-loaded area full chunks too; Horizon keeps them as unfinished chunks. With Chunky-style pre-generation this does not matter.</li>
+</ul>

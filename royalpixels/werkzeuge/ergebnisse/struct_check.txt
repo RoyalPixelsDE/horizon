@@ -1,0 +1,137 @@
+=== seed 12345 vs vanilla2
+minecraft:ruined_portal chunk -34,15: 1 pieces, 972 blocks, 1 containers; OK
+minecraft:shipwreck chunk -8,2: 1 pieces, 1944 blocks, 1 containers; OK
+minecraft:ruined_portal chunk 0,-18: 1 pieces, 1134 blocks, 1 containers; OK
+minecraft:ruined_portal chunk 1,0: 1 pieces, 245 blocks, 1 containers; OK
+minecraft:shipwreck chunk 11,10: 1 pieces, 1944 blocks, 1 containers; OK
+=== seed 12345 vs hznew
+minecraft:ruined_portal chunk -34,15: 1 pieces, 972 blocks, 1 containers; start DIFFERS, 972 blocks differ, 1 containers differ
+    block ((-544, 99, 248), 'minecraft:netherrack', None)
+    block ((-543, 99, 248), 'minecraft:netherrack', None)
+    block ((-542, 99, 248), 'minecraft:netherrack', None)
+    block ((-541, 99, 248), 'minecraft:netherrack', None)
+    container (-538, 101, 256) {'id': 'minecraft:chest', 'LootTable': 'minecraft:chests/ruined_portal', 'LootTableSeed': 6146291932025625251, 'Items': None, 'item': None} / None
+minecraft:shipwreck chunk -8,2: 1 pieces, 1944 blocks, 1 containers; OK
+minecraft:ruined_portal chunk 0,-18: 1 pieces, 1134 blocks, 1 containers; start same, 15 blocks differ, 0 containers differ
+    block ((0, 74, -284), 'minecraft:stone', 'minecraft:coal_ore')
+    block ((0, 74, -283), 'minecraft:stone', 'minecraft:coal_ore')
+    block ((0, 75, -284), 'minecraft:stone', 'minecraft:coal_ore')
+    block ((0, 75, -283), 'minecraft:stone', 'minecraft:coal_ore')
+minecraft:ruined_portal chunk 1,0: 1 pieces, 245 blocks, 1 containers; OK
+minecraft:shipwreck chunk 11,10: 1 pieces, 1944 blocks, 1 containers; OK
+=== seed 1 vs vanilla2
+minecraft:buried_treasure chunk -28,-22: 1 pieces, 1 blocks, 1 containers; OK
+minecraft:ruined_portal_ocean chunk -24,15: 1 pieces, 972 blocks, 1 containers; start same, 6 blocks differ, 0 containers differ
+    block ((-385, 38, 240), 'minecraft:water', 'minecraft:tall_seagrass')
+    block ((-386, 39, 240), 'minecraft:water', 'minecraft:tall_seagrass')
+    block ((-385, 39, 240), 'minecraft:water', 'minecraft:tall_seagrass[half=upper]')
+    block ((-385, 39, 241), 'minecraft:water', 'minecraft:tall_seagrass')
+minecraft:shipwreck chunk -18,-29: 1 pieces, 2268 blocks, 3 containers; OK
+minecraft:shipwreck chunk -18,11: 1 pieces, 1944 blocks, 1 containers; OK
+minecraft:shipwreck chunk -13,-20: 1 pieces, 2268 blocks, 3 containers; start same, 14 blocks differ, 0 containers differ
+    block ((-204, 37, -306), 'minecraft:water', 'minecraft:tall_seagrass')
+    block ((-204, 38, -306), 'minecraft:water', 'minecraft:tall_seagrass[half=upper]')
+    block ((-201, 40, -308), 'minecraft:water', 'minecraft:tall_seagrass')
+    block ((-202, 40, -307), 'minecraft:water', 'minecraft:tall_seagrass')
+minecraft:shipwreck chunk 8,24: 1 pieces, 1782 blocks, 2 containers; OK
+minecraft:shipwreck chunk 16,-18: 1 pieces, 1296 blocks, 2 containers; OK
+minecraft:ruined_portal chunk 19,18: 1 pieces, 360 blocks, 1 containers; start same, 9 blocks differ, 0 containers differ
+    block ((305, 69, 288), 'minecraft:leaf_litter[facing=east,segment_amount=2]', 'minecraft:air')
+    block ((305, 71, 288), 'minecraft:oak_leaves[distance=5,persistent=false,waterlogged=false]', 'minecraft:air')
+    block ((306, 71, 288), 'minecraft:oak_leaves[distance=4,persistent=false,waterlogged=false]', 'minecraft:air')
+    block ((307, 71, 288), 'minecraft:oak_leaves[distance=3,persistent=false,waterlogged=false]', 'minecraft:air')
+minecraft:shipwreck_beached chunk 28,10: 1 pieces, 1944 blocks, 1 containers; start same, 0 blocks differ, 1 containers differ
+    container (452, 61, 168) {'id': 'minecraft:chest', 'LootTable': 'minecraft:chests/shipwreck_supply', 'LootTableSeed': 7335333922340101344, 'Items': None, 'item': None} / {'id': 'minecraft:chest', 'LootTable': 'minecraft:chests/shipwreck_supply', 'LootTableSeed': -8217841301774245630, 'Items': No
+minecraft:shipwreck chunk 32,-34: 1 pieces, 1782 blocks, 2 containers; start same, 20 blocks differ, 0 containers differ
+    block ((510, 47, -530), 'minecraft:water', 'minecraft:tall_seagrass')
+    block ((510, 48, -530), 'minecraft:water', 'minecraft:tall_seagrass[half=upper]')
+    block ((530, 48, -531), 'minecraft:kelp[age=22]', 'minecraft:tall_seagrass')
+    block ((531, 48, -530), 'minecraft:seagrass', 'minecraft:water')
+=== seed 1 vs hznew
+minecraft:buried_treasure chunk -28,-22: 1 pieces, 1 blocks, 1 containers; OK
+minecraft:ruined_portal_ocean chunk -24,15: 1 pieces, 972 blocks, 1 containers; OK
+minecraft:shipwreck chunk -18,-29: 1 pieces, 2268 blocks, 3 containers; OK
+minecraft:shipwreck chunk -18,11: 1 pieces, 1944 blocks, 1 containers; OK
+minecraft:shipwreck chunk -13,-20: 1 pieces, 2268 blocks, 3 containers; start same, 14 blocks differ, 0 containers differ
+    block ((-204, 37, -306), 'minecraft:water', 'minecraft:tall_seagrass')
+    block ((-204, 38, -306), 'minecraft:water', 'minecraft:tall_seagrass[half=upper]')
+    block ((-201, 40, -308), 'minecraft:water', 'minecraft:tall_seagrass')
+    block ((-202, 40, -307), 'minecraft:water', 'minecraft:tall_seagrass')
+minecraft:shipwreck chunk 8,24: 1 pieces, 1782 blocks, 2 containers; OK
+minecraft:shipwreck chunk 16,-18: 1 pieces, 1296 blocks, 2 containers; OK
+minecraft:ruined_portal chunk 19,18: 1 pieces, 360 blocks, 1 containers; start same, 9 blocks differ, 0 containers differ
+    block ((305, 69, 288), 'minecraft:leaf_litter[facing=east,segment_amount=2]', 'minecraft:air')
+    block ((305, 71, 288), 'minecraft:oak_leaves[distance=5,persistent=false,waterlogged=false]', 'minecraft:air')
+    block ((306, 71, 288), 'minecraft:oak_leaves[distance=4,persistent=false,waterlogged=false]', 'minecraft:air')
+    block ((307, 71, 288), 'minecraft:oak_leaves[distance=3,persistent=false,waterlogged=false]', 'minecraft:air')
+minecraft:shipwreck_beached chunk 28,10: 1 pieces, 1944 blocks, 1 containers; start same, 0 blocks differ, 1 containers differ
+    container (452, 61, 168) {'id': 'minecraft:chest', 'LootTable': 'minecraft:chests/shipwreck_supply', 'LootTableSeed': 7335333922340101344, 'Items': None, 'item': None} / {'id': 'minecraft:chest', 'LootTable': 'minecraft:chests/shipwreck_supply', 'LootTableSeed': -8217841301774245630, 'Items': No
+minecraft:shipwreck chunk 32,-34: 1 pieces, 1782 blocks, 2 containers; start DIFFERS, 1782 blocks differ, 2 containers differ
+    block ((510, 47, -533), 'minecraft:water', None)
+    block ((511, 47, -533), 'minecraft:water', None)
+    block ((510, 47, -532), 'minecraft:water', None)
+    block ((511, 47, -532), 'minecraft:water', None)
+    container (523, 52, -529) {'id': 'minecraft:chest', 'LootTable': 'minecraft:chests/shipwreck_supply', 'LootTableSeed': -203975967270807510, 'Items': None, 'item': None} / None
+    container (514, 52, -530) {'id': 'minecraft:chest', 'LootTable': 'minecraft:chests/shipwreck_map', 'LootTableSeed': 4776675985528544204, 'Items': None, 'item': None} / None
+=== seed 8675309 vs vanilla2
+minecraft:ruined_portal chunk -31,-33: 1 pieces, 1134 blocks, 1 containers; OK
+minecraft:ruined_portal_mountain chunk -26,23: 1 pieces, 4096 blocks, 1 containers; start same, 27 blocks differ, 0 containers differ
+    block ((-410, 113, 397), 'minecraft:air', 'minecraft:pink_petals[facing=south,flower_amount=1]')
+    block ((-414, 114, 396), 'minecraft:air', 'minecraft:pink_petals[facing=west,flower_amount=4]')
+    block ((-406, 115, 390), 'minecraft:air', 'minecraft:pink_petals[facing=south,flower_amount=4]')
+    block ((-407, 115, 391), 'minecraft:air', 'minecraft:pink_petals[facing=south,flower_amount=1]')
+minecraft:village_plains chunk -19,-20: 122 pieces, 41645 blocks, 4 containers; start same, 11 blocks differ, 0 containers differ
+    block ((-358, 67, -322), 'minecraft:air', 'minecraft:dandelion')
+    block ((-309, 76, -320), 'minecraft:poppy', 'minecraft:air')
+    block ((-305, 76, -320), 'minecraft:dandelion', 'minecraft:air')
+    block ((-339, 64, -323), 'minecraft:short_grass', 'minecraft:air')
+minecraft:village_plains chunk -17,22: 97 pieces, 63562 blocks, 4 containers; start same, 378 blocks differ, 0 containers differ
+    block ((-288, 79, 395), 'minecraft:air', 'minecraft:short_grass')
+    block ((-260, 66, 373), 'minecraft:leaf_litter[facing=north,segment_amount=3]', 'minecraft:air')
+    block ((-259, 66, 373), 'minecraft:leaf_litter[facing=east,segment_amount=1]', 'minecraft:air')
+    block ((-259, 66, 374), 'minecraft:leaf_litter[facing=east,segment_amount=2]', 'minecraft:air')
+minecraft:shipwreck chunk 5,-33: 1 pieces, 2268 blocks, 3 containers; start same, 19 blocks differ, 0 containers differ
+    block ((86, 52, -513), 'minecraft:seagrass', 'minecraft:water')
+    block ((88, 55, -516), 'minecraft:seagrass', 'minecraft:water')
+    block ((89, 55, -516), 'minecraft:seagrass', 'minecraft:water')
+    block ((82, 55, -515), 'minecraft:seagrass', 'minecraft:water')
+minecraft:buried_treasure chunk 11,10: 1 pieces, 1 blocks, 1 containers; OK
+minecraft:ruined_portal_ocean chunk 15,15: 1 pieces, 648 blocks, 1 containers; OK
+minecraft:shipwreck chunk 17,-15: 1 pieces, 2268 blocks, 3 containers; OK
+minecraft:shipwreck chunk 19,10: 1 pieces, 1377 blocks, 2 containers; OK
+minecraft:shipwreck chunk 24,12: 1 pieces, 1782 blocks, 2 containers; start same, 1 blocks differ, 0 containers differ
+    block ((400, 44, 207), 'minecraft:air', 'minecraft:water')
+=== seed 8675309 vs hznew
+minecraft:ruined_portal chunk -31,-33: 1 pieces, 1134 blocks, 1 containers; start DIFFERS, 1134 blocks differ, 1 containers differ
+    block ((-495, 71, -528), 'minecraft:magma_block', None)
+    block ((-494, 71, -528), 'minecraft:air', None)
+    block ((-493, 71, -528), 'minecraft:netherrack', None)
+    block ((-492, 71, -528), 'minecraft:netherrack', None)
+    container (-486, 75, -522) {'id': 'minecraft:chest', 'LootTable': 'minecraft:chests/ruined_portal', 'LootTableSeed': 5106713690190434308, 'Items': None, 'item': None} / None
+minecraft:ruined_portal_mountain chunk -26,23: 1 pieces, 4096 blocks, 1 containers; start same, 26 blocks differ, 0 containers differ
+    block ((-410, 113, 397), 'minecraft:air', 'minecraft:pink_petals[facing=south,flower_amount=1]')
+    block ((-414, 114, 396), 'minecraft:air', 'minecraft:pink_petals[facing=west,flower_amount=4]')
+    block ((-406, 115, 390), 'minecraft:air', 'minecraft:pink_petals[facing=south,flower_amount=4]')
+    block ((-407, 115, 391), 'minecraft:air', 'minecraft:pink_petals[facing=south,flower_amount=1]')
+minecraft:village_plains chunk -19,-20: 122 pieces, 41645 blocks, 4 containers; start same, 4 blocks differ, 0 containers differ
+    block ((-339, 64, -323), 'minecraft:short_grass', 'minecraft:air')
+    block ((-346, 65, -321), 'minecraft:short_grass', 'minecraft:air')
+    block ((-352, 66, -322), 'minecraft:short_grass', 'minecraft:air')
+    block ((-351, 66, -321), 'minecraft:short_grass', 'minecraft:air')
+minecraft:village_plains chunk -17,22: 97 pieces, 63562 blocks, 4 containers; start same, 434 blocks differ, 0 containers differ
+    block ((-260, 66, 373), 'minecraft:leaf_litter[facing=north,segment_amount=3]', 'minecraft:air')
+    block ((-259, 66, 373), 'minecraft:leaf_litter[facing=east,segment_amount=1]', 'minecraft:air')
+    block ((-259, 66, 374), 'minecraft:leaf_litter[facing=east,segment_amount=2]', 'minecraft:air')
+    block ((-264, 66, 375), 'minecraft:dirt', 'minecraft:grass_block')
+minecraft:shipwreck chunk 5,-33: 1 pieces, 2268 blocks, 3 containers; start DIFFERS, 2268 blocks differ, 1 containers differ
+    block ((96, 50, -517), 'minecraft:water', None)
+    block ((97, 50, -517), 'minecraft:water', None)
+    block ((98, 50, -517), 'minecraft:water', None)
+    block ((99, 50, -517), 'minecraft:water', None)
+    container (91, 52, -513) {'id': 'minecraft:chest', 'LootTable': 'minecraft:chests/shipwreck_supply', 'LootTableSeed': -4086176911480853474, 'Items': None, 'item': None} / None
+minecraft:buried_treasure chunk 11,10: 1 pieces, 1 blocks, 1 containers; OK
+minecraft:ruined_portal_ocean chunk 15,15: 1 pieces, 648 blocks, 1 containers; OK
+minecraft:shipwreck chunk 17,-15: 1 pieces, 2268 blocks, 3 containers; OK
+minecraft:shipwreck chunk 19,10: 1 pieces, 1377 blocks, 2 containers; OK
+minecraft:shipwreck chunk 24,12: 1 pieces, 1782 blocks, 2 containers; start same, 1 blocks differ, 0 containers differ
+    block ((400, 44, 207), 'minecraft:air', 'minecraft:water')
