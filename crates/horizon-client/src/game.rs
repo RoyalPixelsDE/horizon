@@ -11386,8 +11386,10 @@ impl Game<'_> {
         self.streaming.loading =
             self.options.execution_role.is_client() && self.loading_reason().is_some();
         self.tick_pregen();
+        let up0 = std::time::Instant::now();
         let (uploads, unloaded) =
             horizon_client::spans::time("streaming", || self.streaming.update(&mut self.world));
+        horizon_client::streaming::prof::add(7, up0.elapsed());
         self.spawn_fresh_chunks();
         if let Some(lod) = &mut self.lod {
             self.lod_observe

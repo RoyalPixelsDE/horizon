@@ -460,6 +460,7 @@ impl Streaming {
                         // cloning it per job copied every state and face shape.
                         let mut faces: Option<(Arc<MeshTables>, FaceVisibility)> = None;
                         loop {
+                            let wait0 = std::time::Instant::now();
                             let job = {
                                 let mut queue = shared.queue.lock().unwrap();
                                 loop {
@@ -472,6 +473,16 @@ impl Streaming {
                                     queue = shared.ready.wait(queue).unwrap();
                                 }
                             };
+                            prof::add(6, wait0.elapsed());
+                            let kind = match &job {
+                                Job::Generate(..) => 0,
+                                Job::Decorate(..) => 1,
+                                Job::Finish(..) => 2,
+                                Job::Save(..) => 3,
+                                Job::Light(..) => 4,
+                                Job::Mesh(..) => 5,
+                            };
+                            let t0 = std::time::Instant::now();
                             let done = match job {
                                 Job::Generate(x, z) => match generator.load(x, z) {
                                     Some(chunk) => {
@@ -525,6 +536,7 @@ impl Streaming {
                                     Done::Meshed(x, sy, z, mesh, seq)
                                 }
                             };
+                            prof::add(kind, t0.elapsed());
                             if send.send(done).is_err() {
                                 return;
                             }
@@ -2459,5 +2471,43 @@ mod cover_tests {
                 time(&ranges(Some(&cover))),
             );
         }
+    }
+}
+
+pub mod prof {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    pub static NS: [AtomicU64; 8] = [const { AtomicU64::new(0) }; 8];
+    pub static N: [AtomicU64; 8] = [const { AtomicU64::new(0) }; 8];
+    pub fn add(k: usize, d: std::time::Duration) {
+        NS[k].fetch_add(d.as_nanos() as u64, Ordering::Relaxed);
+        N[k].fetch_add(1, Ordering::Relaxed);
+    }
+    pub static STAGE: [AtomicU64; 5] = [const { AtomicU64::new(0) }; 5];
+    pub fn stage(i: usize, d: std::time::Duration) {
+        STAGE[i].fetch_add(d.as_nanos() as u64, Ordering::Relaxed);
+    }
+    pub fn report() -> String {
+        let stages = ["biomes", "structures", "noise", "surface", "carvers"]
+            .iter()
+            .enumerate()
+            .map(|(i, n)| format!("{n}={:.1}s", STAGE[i].load(Ordering::Relaxed) as f64 / 1e9))
+            .collect::<Vec<_>>()
+            .join(" ");
+        format!("{} | {stages}", report_jobs())
+    }
+    fn report_jobs() -> String {
+        let names = ["generate", "decorate", "finish", "save", "light", "mesh", "worker_wait", "main_update"];
+        names
+            .iter()
+            .enumerate()
+            .map(|(i, n)| {
+                format!(
+                    "{n}={:.1}s/{}",
+                    NS[i].load(Ordering::Relaxed) as f64 / 1e9,
+                    N[i].load(Ordering::Relaxed)
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(" ")
     }
 }

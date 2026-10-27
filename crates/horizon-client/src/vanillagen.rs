@@ -468,7 +468,22 @@ impl ChunkGenerator for VanillaTerrain {
             self.elapsed_ms().max(1),
             std::sync::atomic::Ordering::Relaxed,
         );
-        match worker.generate_proto(ChunkPos::new(x, z)) {
+        let before = worker.stage_timings();
+        let result = worker.generate_proto(ChunkPos::new(x, z));
+        let after = worker.stage_timings();
+        for (i, d) in [
+            after.biomes - before.biomes,
+            after.structures - before.structures,
+            after.noise - before.noise,
+            after.surface - before.surface,
+            after.carvers - before.carvers,
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            crate::streaming::prof::stage(i, d);
+        }
+        match result {
             Ok(chunk) => Box::new(VanillaProto::Ready(Box::new(chunk))),
             Err(e) => {
                 log::warn!("Horizon: generating chunk {x} {z} failed: {e}");

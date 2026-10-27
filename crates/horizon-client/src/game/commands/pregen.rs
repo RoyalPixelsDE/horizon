@@ -49,6 +49,7 @@ impl PregenTask {
         } else {
             "unknown".into()
         };
+        log::warn!("prof {}", horizon_client::streaming::prof::report());
         Text::literal(format!(
             "Pregenerating {}: {} of {} chunks ({:.1}%), {rate:.1} chunks/s, {} left",
             self.dim.id(),
