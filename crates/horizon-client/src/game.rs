@@ -4707,6 +4707,7 @@ impl Game<'_> {
     /// What the tick runs after the local player's own update: effects, the
     /// world's entities and blocks, and the network hub.
     fn tick_world(&mut self, running: bool) -> Result<()> {
+        self.share_spawn_conditions();
         self.update_chunk_tickets();
         horizon_client::spans::time("tick_effects", || self.tick_effects(running));
         // Player.tick's ItemCooldowns.tick for the window's player (a
@@ -8132,6 +8133,7 @@ impl Game<'_> {
         );
         self.session_lock = Some(session_lock);
         self.end.set_locator(locator);
+        self.share_spawn_conditions();
         self.score = Default::default();
         self.fns = Default::default();
         self.bosses = Default::default();
@@ -8270,6 +8272,7 @@ impl Game<'_> {
             seed,
         )?;
         self.end.set_locator(locator);
+        self.share_spawn_conditions();
         Ok((streaming, save))
     }
     /// Change dimension through a portal (Entity.changeDimension with
@@ -11385,6 +11388,7 @@ impl Game<'_> {
         self.tick_pregen();
         let (uploads, unloaded) =
             horizon_client::spans::time("streaming", || self.streaming.update(&mut self.world));
+        self.spawn_fresh_chunks();
         if let Some(lod) = &mut self.lod {
             self.lod_observe
                 .extend(uploads.iter().map(|(key, _)| (key.0, key.2)));

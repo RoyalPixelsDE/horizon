@@ -19,12 +19,15 @@ use horizon_world::{
         generator::{
             GeneratorData, GeneratorWorker, OverworldGenerator, ProtoChunk, SurfaceSample,
         },
+        structure::legacy::PieceRandom,
         terrain::PreLightChunkStage,
     },
 };
 use std::{path::Path, sync::Arc};
 mod lod;
+mod structure_mobs;
 use lod::VanillaLodSampler;
+use structure_mobs::StructureMobFinalizer;
 
 pub struct VanillaTerrain {
     generator: OverworldGenerator,
@@ -32,6 +35,7 @@ pub struct VanillaTerrain {
     biome_map: Vec<u16>,
     /// Loot tables for generated containers.
     loot: Option<Arc<horizon_world::loot::LootData>>,
+    structure_mobs: Arc<StructureMobFinalizer>,
     /// A worker for structure queries from the game thread.
     query: std::sync::Mutex<Option<GeneratorWorker>>,
     /// Block state id -> block index, the game's block tick type: worldgen
@@ -187,6 +191,10 @@ impl VanillaTerrain {
             generator,
             biome_map,
             loot,
+            structure_mobs: Arc::new(StructureMobFinalizer::new(
+                dir.parent().unwrap_or(dir).to_owned(),
+                dimension,
+            )),
             query: std::sync::Mutex::new(None),
             tick_blocks,
             tick_states,
@@ -196,6 +204,29 @@ impl VanillaTerrain {
             last_proto: std::sync::atomic::AtomicU64::new(0),
             created: std::time::Instant::now(),
         })
+    }
+    /// The difficulty (0 peaceful to 3 hard) and overworld clock structure
+    /// mobs are finalized with.
+    pub fn set_spawn_conditions(&self, difficulty: u8, day_time: i64) {
+        self.structure_mobs.set_conditions(difficulty, day_time);
+    }
+    /// The random a chunk's generation steps draw from (`WorldGenRegion`).
+    pub fn region_random(&self, cx: i32, cz: i32) -> Box<dyn PieceRandom> {
+        self.generator.region_random(ChunkPos::new(cx, cz))
+    }
+    /// A mob chunk generation spawns, as the chunk saves it
+    /// (`StructureMobFinalizer::spawn_generated`).
+    pub fn spawn_generated(
+        &self,
+        kind: &str,
+        position: horizon_core::geometry::Vec3,
+        yaw: f32,
+        biome: &str,
+        random: &mut dyn PieceRandom,
+        group: &mut Option<crate::mobs::finalize::Group>,
+    ) -> Option<horizon_world::nbt::Compound> {
+        self.structure_mobs
+            .spawn_generated(kind, position, yaw, biome, random, group)
     }
     /// A proto chunk's blocks, biomes, scheduled ticks and post-processing
     /// marks as a column.
@@ -404,7 +435,9 @@ pub fn shared_data(
 impl ChunkGenerator for VanillaTerrain {
     type Worker = GeneratorWorker;
     fn worker(&self) -> GeneratorWorker {
-        self.generator.worker()
+        let mut worker = self.generator.worker();
+        worker.set_structure_mobs(self.structure_mobs.clone());
+        worker
     }
     fn lod_sampler(self: Arc<Self>) -> Box<dyn LodSampler> {
         Box::new(VanillaLodSampler::new(self))

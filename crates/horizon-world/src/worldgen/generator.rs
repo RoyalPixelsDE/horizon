@@ -1271,6 +1271,17 @@ impl<R: RandomSource> Pipeline<R>
 where
     R::Positional: Clone + Send + Sync,
 {
+    /// WorldGenRegion's level random, positioned at the center chunk.
+    fn region_random_at(&self, center: ChunkPos) -> R {
+        self.root
+            .from_hash_of("minecraft:worldgen_region_random")
+            .fork_positional()
+            .at(BlockPos::new(
+                center.x.wrapping_shl(4),
+                0,
+                center.z.wrapping_shl(4),
+            ))
+    }
     /// ChunkGenerator.getBaseHeight: the first free Y above the noise column
     /// (with aquifers, without terrain adaptation) for a heightmap type.
     fn base_height(&self, x: i32, z: i32, kind: HeightmapType) -> i32 {
@@ -1651,6 +1662,22 @@ pub(super) struct WorkerState {
     heights: HashMap<(i32, i32, u8), i32>,
     /// Decorate with structure pieces only (for structure parity checks).
     pub(super) structures_only: bool,
+    pub(super) structure_mobs: Option<Arc<dyn StructureMobs>>,
+}
+/// `Mob.finalizeSpawn(level, difficulty, STRUCTURE, null)` of the entities a
+/// structure places with finalizeEntities, run by the game, which owns mobs.
+pub trait StructureMobs: Send + Sync {
+    /// Finalizes the entity in `nbt` if it is a mob, drawing from the
+    /// region's random. `biome` is the biome at its block, `structures` the
+    /// structures with a piece there. False when it could not: the entity
+    /// keeps its `horizon:finalize` for the game to finish on load.
+    fn finalize(
+        &self,
+        nbt: &mut crate::nbt::Compound,
+        biome: &str,
+        structures: &[String],
+        random: &mut dyn super::structure::legacy::PieceRandom,
+    ) -> bool;
 }
 
 trait SeededPipeline: Send + Sync {
@@ -1697,6 +1724,7 @@ trait SeededPipeline: Send + Sync {
     fn forget_structure_starts(&self);
     fn ring_positions(&self, worker: &mut WorkerState, set: &str) -> Option<Vec<ChunkPos>>;
     fn spawn_position(&self) -> Result<[i32; 2], GeneratorError>;
+    fn region_random(&self, center: ChunkPos) -> Box<dyn super::structure::legacy::PieceRandom>;
     fn locate(
         &self,
         worker: &mut WorkerState,
@@ -1735,17 +1763,7 @@ where
     ) -> Result<DecorateStats, GeneratorError> {
         match &self.decoration {
             Some(decoration) => {
-                let center = region[4].position();
-                // WorldGenRegion's level random, positioned at the center chunk.
-                let mut random = self
-                    .root
-                    .from_hash_of("minecraft:worldgen_region_random")
-                    .fork_positional()
-                    .at(BlockPos::new(
-                        center.x.wrapping_shl(4),
-                        0,
-                        center.z.wrapping_shl(4),
-                    ));
+                let mut random = self.region_random_at(region[4].position());
                 decoration.decorate(
                     &self.data,
                     self.seed,
@@ -1819,6 +1837,9 @@ where
             },
             set,
         )
+    }
+    fn region_random(&self, center: ChunkPos) -> Box<dyn super::structure::legacy::PieceRandom> {
+        Box::new(self.region_random_at(center))
     }
     fn spawn_position(&self) -> Result<[i32; 2], GeneratorError> {
         if let Some(position) = self.spawn_position.get() {
@@ -2450,6 +2471,14 @@ impl OverworldGenerator {
     pub fn spawn_position(&self) -> Result<[i32; 2], GeneratorError> {
         self.pipeline.spawn_position()
     }
+    /// A new `WorldGenRegion` random centred on the chunk: what its generation
+    /// steps draw from (`level.getRandom()`).
+    pub fn region_random(
+        &self,
+        center: ChunkPos,
+    ) -> Box<dyn super::structure::legacy::PieceRandom> {
+        self.pipeline.region_random(center)
+    }
     /// Create per-thread state. Workers are cheap; keep one per thread.
     pub fn worker(&self) -> GeneratorWorker {
         let data = self.pipeline.data();
@@ -2467,6 +2496,7 @@ impl OverworldGenerator {
                 carver_biomes: HashMap::new(),
                 timings: StageTimings::default(),
                 structures_only: false,
+                structure_mobs: None,
                 heights: HashMap::new(),
             },
         }
@@ -2592,6 +2622,9 @@ impl GeneratorWorker {
     /// (for structure placement parity checks).
     pub fn set_structures_only(&mut self, only: bool) {
         self.state.structures_only = only;
+    }
+    pub fn set_structure_mobs(&mut self, mobs: Arc<dyn StructureMobs>) {
+        self.state.structure_mobs = Some(mobs);
     }
 }
 
